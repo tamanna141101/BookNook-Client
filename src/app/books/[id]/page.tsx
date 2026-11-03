@@ -10,6 +10,10 @@ import {
   Loader2,
   User,
   Tag,
+  CalendarDays,
+  Mail,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 
 interface Book {
@@ -27,15 +31,36 @@ interface Book {
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// Book Details Content
+// Get tomorrow's date in local YYYY-MM-DD format
+function getTomorrowDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function BookDetailsContent() {
   const params = useParams();
   const id = params.id as string;
 
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
+  const [showBorrowForm, setShowBorrowForm] = useState(false);
+  const [borrowing, setBorrowing] = useState(false);
+
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  // Fetch book details
   useEffect(() => {
     if (!id) return;
 
@@ -46,10 +71,9 @@ function BookDetailsContent() {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `${API_URL}/books/${id}`,
-          { signal: controller.signal }
-        );
+        const response = await fetch(`${API_URL}/books/${id}`, {
+          signal: controller.signal,
+        });
 
         const data = await response.json();
 
@@ -77,7 +101,112 @@ function BookDetailsContent() {
     return () => controller.abort();
   }, [id]);
 
-  // Loading State
+  // Load saved user email
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("booknook_user_email");
+
+    if (savedEmail) {
+      setUserEmail(savedEmail);
+    }
+  }, []);
+
+  // Open borrow form
+  const handleOpenBorrowForm = () => {
+    setError("");
+    setMessage("");
+    setShowBorrowForm(true);
+  };
+
+  // Borrow book
+  const handleBorrow = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+
+    if (!book) return;
+
+    const cleanName = userName.trim();
+    const cleanEmail = userEmail.trim().toLowerCase();
+
+    if (!cleanName || !cleanEmail || !returnDate) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    if (book.availableCopies < 1) {
+      setError("Sorry! This book is currently out of stock.");
+      return;
+    }
+
+    if (new Date(returnDate) <= new Date(new Date().toDateString())) {
+      setError("Please select a future return date.");
+      return;
+    }
+
+    try {
+      setBorrowing(true);
+      setError("");
+      setMessage("");
+
+      const response = await fetch(`${API_URL}/borrows`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookId: book._id,
+          userEmail: cleanEmail,
+          userName: cleanName,
+          returnDate,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to borrow book");
+      }
+
+      // Save email for My Books and My Borrows pages
+      localStorage.setItem("booknook_user_email", cleanEmail);
+
+      // Update available copies immediately
+      setBook((previous) =>
+        previous
+          ? {
+              ...previous,
+              availableCopies: Math.max(
+                0,
+                previous.availableCopies - 1
+              ),
+            }
+          : null
+      );
+
+      setMessage("Book borrowed successfully!");
+      setShowBorrowForm(false);
+      setReturnDate("");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong";
+
+      if (errorMessage === "No copies available for borrowing") {
+        setError("Sorry! This book is currently out of stock.");
+      } else if (
+        errorMessage === "You have already borrowed this book"
+      ) {
+        setError("You have already borrowed this book.");
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setBorrowing(false);
+    }
+  };
+
+  // Loading screen
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8faf9]">
@@ -86,8 +215,8 @@ function BookDetailsContent() {
     );
   }
 
-  // Error State
-  if (error || !book) {
+  // Error screen
+  if (error && !book) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#f8faf9] px-4 text-center">
         <BookOpen className="mb-4 h-16 w-16 text-gray-300" />
@@ -96,9 +225,7 @@ function BookDetailsContent() {
           Book Not Found
         </h2>
 
-        <p className="mb-6 text-gray-500">
-          {error || "Sorry, this book could not be found."}
-        </p>
+        <p className="mb-6 text-gray-500">{error}</p>
 
         <Link
           href="/books"
@@ -110,7 +237,8 @@ function BookDetailsContent() {
     );
   }
 
-  // Book Details UI
+  if (!book) return null;
+
   return (
     <main className="min-h-screen bg-[#f8faf9] px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-6xl">
@@ -128,11 +256,15 @@ function BookDetailsContent() {
 
           {/* Book Image */}
           <div className="flex min-h-[400px] items-center justify-center bg-gray-100 p-8">
-            <img
-              src={book.image}
-              alt={book.title}
-              className="max-h-[480px] w-full rounded-xl object-contain"
-            />
+            {book.image ? (
+              <img
+                src={book.image}
+                alt={book.title}
+                className="max-h-[480px] w-full rounded-xl object-contain"
+              />
+            ) : (
+              <BookOpen size={100} className="text-gray-400" />
+            )}
           </div>
 
           {/* Book Information */}
@@ -162,7 +294,7 @@ function BookDetailsContent() {
               </p>
             </div>
 
-            {/* Book Copies */}
+            {/* Copies */}
             <div className="mb-8 grid grid-cols-2 gap-4">
 
               <div className="rounded-xl bg-gray-50 p-4">
@@ -192,25 +324,165 @@ function BookDetailsContent() {
                   {book.availableCopies}
                 </p>
               </div>
-
             </div>
+
+            {/* Success Message */}
+            {message && (
+              <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <div className="flex items-center gap-2 font-semibold text-emerald-700">
+                  <CheckCircle size={20} />
+                  {message}
+                </div>
+
+                <Link
+                  href="/my-borrows"
+                  className="mt-2 inline-block text-sm font-semibold text-emerald-700 underline"
+                >
+                  View My Borrowed Books
+                </Link>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <AlertCircle size={20} />
+                {error}
+              </div>
+            )}
 
             {/* Borrow Button */}
             {book.availableCopies > 0 ? (
-              <Link
-                href={`/login?redirect=/books/${book._id}`}
-                className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-4 font-bold text-white transition hover:bg-emerald-700"
+              <button
+                type="button"
+                onClick={handleOpenBorrowForm}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-4 font-bold text-white transition hover:bg-emerald-700"
               >
                 <BookOpen size={20} />
                 Borrow This Book
-              </Link>
+              </button>
             ) : (
               <button
                 disabled
                 className="w-full cursor-not-allowed rounded-xl bg-gray-300 px-6 py-4 font-bold text-gray-600"
               >
-                Currently Unavailable
+                Out of Stock
               </button>
+            )}
+
+            {/* Borrow Form */}
+            {showBorrowForm && (
+              <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5 sm:p-6">
+                <h2 className="mb-2 text-xl font-bold text-gray-900">
+                  Borrow This Book
+                </h2>
+
+                <p className="mb-5 text-sm text-gray-600">
+                  Enter your information to borrow this book.
+                </p>
+
+                <form onSubmit={handleBorrow} className="space-y-4">
+
+                  {/* Name */}
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-800">
+                      Your Name
+                    </label>
+
+                    <div className="relative">
+                      <User
+                        size={18}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+
+                      <input
+                        type="text"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Enter your full name"
+                        required
+                        className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-900 outline-none placeholder:text-gray-400 focus:border-emerald-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-800">
+                      Email Address
+                    </label>
+
+                    <div className="relative">
+                      <Mail
+                        size={18}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+
+                      <input
+                        type="email"
+                        value={userEmail}
+                        onChange={(e) => setUserEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        required
+                        className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-900 outline-none placeholder:text-gray-400 focus:border-emerald-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Return Date */}
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-800">
+                      Return Date
+                    </label>
+
+                    <div className="relative">
+                      <CalendarDays
+                        size={18}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+
+                      <input
+                        type="date"
+                        value={returnDate}
+                        onChange={(e) => setReturnDate(e.target.value)}
+                        min={getTomorrowDate()}
+                        required
+                        className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-900 outline-none focus:border-emerald-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Form Buttons */}
+                  <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                    <button
+                      type="submit"
+                      disabled={borrowing}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {borrowing ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          Borrowing...
+                        </>
+                      ) : (
+                        "Confirm Borrow"
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBorrowForm(false);
+                        setError("");
+                      }}
+                      disabled={borrowing}
+                      className="rounded-lg border border-gray-300 bg-white px-5 py-3 font-semibold text-gray-700 hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
 
           </div>
