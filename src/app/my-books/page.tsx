@@ -44,6 +44,11 @@ export default function MyBooksPage() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Delete modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const [editForm, setEditForm] = useState({
     title: "",
     author: "",
@@ -109,25 +114,43 @@ export default function MyBooksPage() {
     await loadMyBooks(ownerEmail);
   };
 
-  // Delete book
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this book?"
-    );
+  // Open delete confirmation modal
+  const openDeleteModal = (id: string) => {
+    setSelectedBookId(id);
+    setShowDeleteModal(true);
+    setError("");
+    setSuccess("");
+  };
 
-    if (!confirmed) return;
+  // Close delete confirmation modal
+  const closeDeleteModal = () => {
+    if (deleting) return;
 
+    setShowDeleteModal(false);
+    setSelectedBookId(null);
+  };
+
+  // Delete book after confirmation
+  const handleDelete = async () => {
+    if (!selectedBookId || !email) return;
+
+    setDeleting(true);
     setError("");
     setSuccess("");
 
     try {
-      const response = await fetch(`${API_URL}/books/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userEmail: email }),
-      });
+      const response = await fetch(
+        `${API_URL}/books/${selectedBookId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userEmail: email,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -136,14 +159,18 @@ export default function MyBooksPage() {
       }
 
       setBooks((previous) =>
-        previous.filter((book) => book._id !== id)
+        previous.filter((book) => book._id !== selectedBookId)
       );
 
       setSuccess("Book deleted successfully!");
+      setShowDeleteModal(false);
+      setSelectedBookId(null);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not delete book."
       );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -224,6 +251,7 @@ export default function MyBooksPage() {
     setSearched(false);
     setError("");
     setSuccess("");
+    setEditingBook(null);
   };
 
   return (
@@ -446,7 +474,7 @@ export default function MyBooksPage() {
             </h2>
 
             <p className="mt-3 text-gray-600">
-                You haven't added any books to BookNook yet. Start building your collection now!
+              You haven't added any books to BookNook yet. Start building your collection now!
             </p>
 
             <Link
@@ -534,7 +562,7 @@ export default function MyBooksPage() {
                       </button>
 
                       <button
-                        onClick={() => handleDelete(book._id)}
+                        onClick={() => openDeleteModal(book._id)}
                         className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2.5 font-semibold text-red-700 transition hover:bg-red-100"
                       >
                         <Trash2 size={17} />
@@ -547,6 +575,60 @@ export default function MyBooksPage() {
             </div>
           </>
         )}
+
+        {/* Custom Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Trash2 size={28} />
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-950">
+                Delete This Book?
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-gray-600">
+                Are you sure you want to delete this book from your collection?
+                This action cannot be undone.
+              </p>
+
+              <div className="mt-7 flex justify-end gap-3">
+
+                <button
+                  type="button"
+                  onClick={closeDeleteModal}
+                  disabled={deleting}
+                  className="rounded-lg border border-gray-300 px-5 py-2.5 font-semibold text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Yes, Delete
+                    </>
+                  )}
+                </button>
+
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </main>
   );
