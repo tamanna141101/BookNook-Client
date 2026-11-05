@@ -3,7 +3,7 @@
 BookNook is a modern online book library application where users can explore books, view book details, add and manage their own books, and borrow or return books.
 
 ## 🌐 Live Website
-[Visit BookNook](YOUR_VERCEL_DEPLOYMENT_URL)
+[Visit BookNook](https://book-nook-client-ashen.vercel.app/)
 
 ## ✨ Features
 
@@ -97,4 +97,15 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🔗 Backend Repository
 
-[BookNook
+[BookNook Server](https://github.com/tamanna141101/BookNook-Server)
+
+## 👩‍💻 Developer
+
+**Tamanna Islam**
+
+- GitHub: [tamanna141101](https://github.com/tamanna141101)
+- LinkedIn: [Tamanna Islam](https://www.linkedin.com/in/tamannaislam14/)
+
+---
+
+⭐ If you find this project interesting, feel free to explore the repository!
