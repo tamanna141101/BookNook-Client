@@ -43,13 +43,7 @@ interface EditForm {
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const categories = [
-  "Fiction",
-  "Science",
-  "History",
-  "Kids",
-  "Others",
-];
+const categories = ["Fiction", "Science", "History", "Kids", "Others"];
 
 const emptyEditForm: EditForm = {
   title: "",
@@ -68,17 +62,13 @@ export default function MyBooksPage() {
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [editForm, setEditForm] = useState<EditForm>(emptyEditForm);
   const [saving, setSaving] = useState(false);
-
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -186,7 +176,10 @@ export default function MyBooksPage() {
       return;
     }
 
-    if (!Number.isInteger(editForm.totalCopies) || editForm.totalCopies < 1) {
+    if (
+      !Number.isInteger(editForm.totalCopies) ||
+      editForm.totalCopies < 1
+    ) {
       setError("Total copies must be at least 1.");
       return;
     }
@@ -309,7 +302,6 @@ export default function MyBooksPage() {
   return (
     <main className="min-h-screen bg-[#f8faf8] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-
         {/* Page Header */}
         <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
@@ -376,14 +368,14 @@ export default function MyBooksPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by book title or author..."
-              className="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-4 text-gray-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
 
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="rounded-lg border border-gray-300 px-4 py-3 text-gray-700 outline-none focus:border-emerald-700"
+            className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-800 outline-none focus:border-emerald-700"
           >
             <option value="All">All Categories</option>
             {categories.map((category) => (
@@ -414,7 +406,6 @@ export default function MyBooksPage() {
             <Loader2 className="h-10 w-10 animate-spin text-emerald-700" />
           </div>
         ) : filteredBooks.length === 0 ? (
-          /* Empty State */
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-5 py-16 text-center">
             <BookOpen className="mx-auto mb-4 h-14 w-14 text-gray-300" />
 
@@ -441,7 +432,6 @@ export default function MyBooksPage() {
             )}
           </div>
         ) : (
-          /* Books Grid */
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredBooks.map((book) => (
               <div
@@ -544,7 +534,7 @@ export default function MyBooksPage() {
                     onChange={(e) =>
                       handleEditChange("title", e.target.value)
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-700"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
                   />
                 </div>
 
@@ -558,7 +548,7 @@ export default function MyBooksPage() {
                     onChange={(e) =>
                       handleEditChange("author", e.target.value)
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-700"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
                   />
                 </div>
               </div>
@@ -573,7 +563,7 @@ export default function MyBooksPage() {
                     onChange={(e) =>
                       handleEditChange("category", e.target.value)
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-700"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
                   >
                     {categories.map((category) => (
                       <option key={category} value={category}>
@@ -599,7 +589,7 @@ export default function MyBooksPage() {
                         Number(e.target.value)
                       )
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-700"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
                   />
                 </div>
               </div>
@@ -615,7 +605,7 @@ export default function MyBooksPage() {
                   onChange={(e) =>
                     handleEditChange("image", e.target.value)
                   }
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-700"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
                 />
               </div>
 
@@ -630,7 +620,7 @@ export default function MyBooksPage() {
                   onChange={(e) =>
                     handleEditChange("description", e.target.value)
                   }
-                  className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-700"
+                  className="w-full resize-y rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
                 />
               </div>
 
