@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Menu,
@@ -16,7 +16,6 @@ import { authClient } from "@/lib/auth-client";
 
 export default function Navbar() {
   const router = useRouter();
-  const pathname = usePathname();
 
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
@@ -31,19 +30,18 @@ export default function Navbar() {
     user.image.trim().length > 0;
 
   useEffect(() => {
-    setMobileOpen(false);
-    setProfileOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     setImageFailed(false);
   }, [user?.image]);
+
+  const closeMenus = () => {
+    setMobileOpen(false);
+    setProfileOpen(false);
+  };
 
   const handleLogout = async () => {
     try {
       await authClient.signOut();
-      setProfileOpen(false);
-      setMobileOpen(false);
+      closeMenus();
       router.push("/");
       router.refresh();
     } catch (error) {
@@ -81,22 +79,23 @@ export default function Navbar() {
     { name: "My Borrows", href: "/my-borrows" },
   ];
 
-  const navLinkClass = (href: string) =>
-    `text-sm font-medium transition-colors ${
-      pathname === href
-        ? "text-emerald-700"
-        : "text-gray-600 hover:text-emerald-700"
-    }`;
+  const navLinkClass =
+    "text-sm font-medium text-gray-600 transition-colors hover:text-emerald-700";
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link
+          href="/"
+          onClick={closeMenus}
+          className="flex items-center gap-2"
+        >
           <div className="rounded-lg bg-emerald-800 p-2">
             <BookOpen className="h-6 w-6 text-white" />
           </div>
+
           <span className="text-xl font-bold text-gray-900">
             Book<span className="text-emerald-700">Nook</span>
           </span>
@@ -108,7 +107,7 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className={navLinkClass(link.href)}
+              className={navLinkClass}
             >
               {link.name}
             </Link>
@@ -120,7 +119,7 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={navLinkClass(link.href)}
+                className={navLinkClass}
               >
                 {link.name}
               </Link>
@@ -154,7 +153,6 @@ export default function Navbar() {
               {profileOpen && (
                 <div className="absolute right-0 top-14 z-50 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl">
 
-                  {/* User Information */}
                   <div className="flex items-center gap-3 border-b border-gray-100 px-2 pb-3">
                     <Avatar size="h-11 w-11" />
 
@@ -162,23 +160,22 @@ export default function Navbar() {
                       <p className="truncate text-sm font-semibold text-gray-900">
                         {user.name || "User"}
                       </p>
+
                       <p className="truncate text-xs text-gray-500">
                         {user.email}
                       </p>
                     </div>
                   </div>
 
-                  {/* My Profile */}
                   <Link
                     href="/profile"
-                    onClick={() => setProfileOpen(false)}
+                    onClick={closeMenus}
                     className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-800"
                   >
                     <User size={17} />
                     My Profile
                   </Link>
 
-                  {/* Logout */}
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -229,7 +226,8 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={navLinkClass(link.href)}
+                onClick={closeMenus}
+                className={navLinkClass}
               >
                 {link.name}
               </Link>
@@ -241,7 +239,8 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={navLinkClass(link.href)}
+                  onClick={closeMenus}
+                  className={navLinkClass}
                 >
                   {link.name}
                 </Link>
@@ -259,6 +258,7 @@ export default function Navbar() {
                       <p className="truncate text-sm font-semibold text-gray-900">
                         {user.name || "User"}
                       </p>
+
                       <p className="truncate text-xs text-gray-500">
                         {user.email}
                       </p>
@@ -267,7 +267,7 @@ export default function Navbar() {
 
                   <Link
                     href="/profile"
-                    onClick={() => setMobileOpen(false)}
+                    onClick={closeMenus}
                     className="mb-2 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-emerald-50"
                   >
                     <User size={17} />
@@ -287,6 +287,7 @@ export default function Navbar() {
                 <div className="flex gap-3">
                   <Link
                     href="/login"
+                    onClick={closeMenus}
                     className="flex-1 rounded-lg border border-emerald-800 py-2 text-center text-sm font-semibold text-emerald-800"
                   >
                     Login
@@ -294,6 +295,7 @@ export default function Navbar() {
 
                   <Link
                     href="/register"
+                    onClick={closeMenus}
                     className="flex-1 rounded-lg bg-emerald-800 py-2 text-center text-sm font-semibold text-white"
                   >
                     Register
