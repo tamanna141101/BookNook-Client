@@ -8,6 +8,11 @@ import client from "@/lib/mongodb";
 
 const db = client.db(process.env.DB_NAME || "booknook");
 
+const trustedOrigins = [
+  "http://localhost:3000",
+  process.env.BETTER_AUTH_URL,
+].filter((origin): origin is string => Boolean(origin));
+
 export const auth = betterAuth({
   appName: "BookNook",
 
@@ -15,7 +20,7 @@ export const auth = betterAuth({
 
   secret: process.env.BETTER_AUTH_SECRET,
 
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins,
 
   database: mongodbAdapter(db, {
     client,
